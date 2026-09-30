@@ -1,83 +1,129 @@
-# Gatherly - Full-Stack Event Booking Platform
+# Gatherly
 
-Gatherly is a full-stack MERN application that allows users to seamlessly browse, register, and pay natively without any third party tools. It features an administrative dashboard for event organizers to create and manage free and paid events. All bookings can be managed manually by an admin to handle payments directly.
+### Discover events. Book your next experience.
+
+Gatherly is a full-stack MERN event discovery and booking platform. Users can explore events, request bookings with email OTP verification, and track their bookings. Event organizers can manage events and review booking requests from an admin dashboard.
 
 ## Features
-- **User Authentication**: Secure login & registration with JWT and bcrypt.
-- **2FA OTP Verification**:
-  - Mandatory Email OTP to activate your account upon Registration (or delayed login attempts).
-  - Mandatory Email OTP to finalize and secure event ticket booking.
-- **Role-Based Access**:
-  - **Admin**: Create, edit, and delete events. Confirm and reject all incoming booking requests, mark them as 'Paid' or 'Not Paid'. Access is strictly locked to database-flagged users only.
-  - **User**: Browse events, submit ticket booking requests via OTP, view personal dashboard pending status, and cancel bookings.
-- **Event Management**: Create free and paid events with detailed descriptions, external image URLs, dates, categories, and seating capacity.
-- **Smart Booking System**:
-  - Mandatory 2FA OTP to authorize a booking request.
-  - All booking requests (both free and paid) enter a secure 'Pending' queue for Admin verification.
-  - Seat availability accurately updates and securely validates against overbooking logic.
-- **Admin Analytics Dashboard**: Track live data such as Pending Requests, Total Revenue, and Total Confirmed Paid Clients directly from the admin panel.
-- **Email Notifications**: Automated email delivery upon successful booking confirmation using Nodemailer.
-- **Sleek UI/UX**: Built entirely with React, Tailwind CSS, and polished with micro-interactions.
 
----
+- **Account security:** Register and sign in with hashed passwords, JWT authentication, and email OTP verification.
+- **Event discovery:** Browse and search upcoming events with dates, locations, categories, ticket prices, and available seats.
+- **OTP-protected booking:** Verify a booking request by email before it is submitted.
+- **Booking dashboard:** View and cancel your own booking requests.
+- **Admin dashboard:** Create and remove events, review booking requests, and approve or reject bookings.
+- **Payment tracking:** Admins can mark bookings as paid or unpaid. Gatherly tracks payment status; it does not process card payments.
+- **Email updates:** Send account verification, password reset, booking verification, and booking confirmation emails.
 
-## 🚀 Setup Instructions
+## Tech stack
+
+| Area | Technologies |
+| --- | --- |
+| Frontend | React, Vite, React Router, Axios, Tailwind CSS |
+| Backend | Node.js, Express |
+| Database | MongoDB Atlas, Mongoose |
+| Authentication | JWT, bcryptjs |
+| Email | Nodemailer, Gmail SMTP/App Password |
+
+## How it works
+
+```mermaid
+flowchart LR
+    U[User or admin] --> W[React web app]
+    W -->|REST API and JSON| A[Express API]
+    A --> M[Mongoose models]
+    M --> D[(MongoDB Atlas)]
+    A --> E[Nodemailer]
+    E --> G[Gmail SMTP]
+    D --> M --> A --> W
+```
+
+### Booking flow
+
+1. A user chooses an event and requests a booking OTP.
+2. Gatherly emails the OTP to the account email.
+3. The user submits the OTP and booking request.
+4. The booking is saved as pending for admin review.
+5. An admin approves or rejects it; approval updates the event's available seats and sends a confirmation email.
+
+## Run locally
 
 ### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
-You will also need a MongoDB database (e.g., [MongoDB Atlas Free Tier](https://www.mongodb.com/cloud/atlas/register)).
 
-### 1. Environment Variables Configuration
-Navigate to `server/.env` and fill in the necessary keys:
-```env
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=replace-with-a-long-random-secret
-EMAIL_USER=your_gmail_address
-EMAIL_PASS=your_gmail_app_password
-PORT=5000
-```
-> **Note**: For `EMAIL_PASS`, you need to generate an "App Password" from your Google Account settings, standard passwords won't work due to 2FA.
+- Node.js and npm
+- A MongoDB Atlas cluster and database user
+- A Gmail account with 2-Step Verification and an App Password, if you want email OTPs
 
-### 2. Run from Outer Folder (Single Terminal)
-You can now manage both backend and frontend from the project root:
+### 1. Clone and install
 
 ```bash
-# from Gatherly project root
+git clone https://github.com/Dilshad814/Gatherly-event-booking.git
+cd Gatherly-event-booking
 npm install
 npm run install:all
+```
+
+### 2. Configure environment variables
+
+Copy the example file:
+
+```powershell
+# Windows PowerShell
+Copy-Item server/.env.example server/.env
+```
+
+```bash
+# macOS/Linux
+cp server/.env.example server/.env
+```
+
+Edit `server/.env` and set your own values:
+
+```env
+MONGO_URI=mongodb+srv://<database-user>:<password>@<cluster-host>/eventora
+JWT_SECRET=<a-long-random-secret>
+EMAIL_USER=<your-sender-gmail>
+EMAIL_PASS=<your-google-app-password>
+PORT=5000
+NODE_ENV=development
+```
+
+In MongoDB Atlas, add your current public IP under **Security → Network Access**. For Gmail, use an App Password instead of your regular Gmail password. Never commit `server/.env`; it contains private credentials.
+
+### 3. Start the app
+
+From the project root, run:
+
+```bash
 npm run dev
 ```
 
-- `npm run dev` starts both `server` and `client` together using `concurrently`.
-- `npm run dev:all` installs dependencies (server + client) and starts both in one command.
-- `npm run start` runs backend `start` + frontend `preview` together.
+By default, the web app is at `http://localhost:5173` and the API is at `http://localhost:5000/api`.
 
-### 3. Install Dependencies
-Open two separate terminals for the backend and frontend.
+## API overview
 
-**Backend Terminal:**
-```bash
-cd server
-npm install --legacy-peer-deps
+All routes are prefixed with `/api`.
+
+| Area | Endpoints | Access |
+| --- | --- | --- |
+| Authentication | `POST /auth/register`, `/auth/login`, `/auth/verify-otp`, `/auth/forgot-password`, `/auth/reset-password` | Public |
+| Events | `GET /events`, `GET /events/:id` | Public |
+| Event management | `POST /events`, `PUT /events/:id`, `DELETE /events/:id` | Admin |
+| Bookings | `POST /bookings/send-otp`, `POST /bookings`, `GET /bookings/my`, `DELETE /bookings/:id` | Signed-in user |
+| Booking review | `PUT /bookings/:id/confirm` | Admin |
+
+## Admin access
+
+Create an account through the app, then assign that account the `admin` role in the database. Keep admin credentials private; this repository does not include a default admin password.
+
+## Project structure
+
+```text
+client/   React frontend
+server/   Express API, MongoDB models, email service, and safe event seeder
 ```
 
-**Frontend Terminal:**
-```bash
-cd client
-npm install
-```
+## Security notes
 
-### 4. Run the Application Local Servers
-**Run Backend:**
-```bash
-cd server
-npm run dev
-```
-*(Server will run on `http://localhost:5000`)*
-
-**Run Frontend:**
-```bash
-cd client
-npm run dev
-```
-*(Client will run on a local port provided by Vite, typically `http://localhost:5173`)*
+- Keep real database, JWT, and email credentials in `server/.env` only.
+- `server/.env.example` contains placeholders for setup and is safe to commit.
+- The seed script only inserts missing sample events; it does not delete users, events, or bookings.
