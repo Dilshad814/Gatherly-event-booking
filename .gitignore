@@ -1,0 +1,16 @@
+node_modules/
+**/node_modules/
+
+# Local environment files may contain database, email, and JWT secrets.
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Generated files and local logs
+dist/
+**/dist/
+*.log
+npm-debug.log*
